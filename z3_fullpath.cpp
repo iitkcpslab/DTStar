@@ -375,10 +375,15 @@ void copy_map(unordered_map<long long int,int> &obs,int v)
 float calc_cost(cycle_node* source,cycle_node* dest)
 {
    
+   vector<int> src_vertex={source->y,source->x,source->state};  
+   vector<int> dest_vertex={dest->y,dest->x,dest->state}; 
+   vector<vector<int>> path;
 
    if(source->x==dest->x && source->y==dest->y)
-   return(0);
-   
+    {
+      static_edge_path.insert(make_pair(make_pair(key(src_vertex),key(dest_vertex)),path));    	
+      return(0);
+    }
     unordered_map<long long int,node* > init_vertex;
     unordered_map<long long int,int > vis;
 
@@ -403,9 +408,7 @@ float calc_cost(cycle_node* source,cycle_node* dest)
 
     node_oq qopen;
     vector<node*> closed;
-    qopen.insert(make_pair(start_nd,key(node_inf)));
-    vector<int> src_vertex={start_nd->y,start_nd->x,start_nd->state};  
-    vector<int> dest_vertex={goal_nd->y,goal_nd->x,goal_nd->state};        
+    qopen.insert(make_pair(start_nd,key(node_inf)));       
     
     init_vertex[key(src_vertex)]=start_nd;
     init_vertex[key(dest_vertex)]=goal_nd;
@@ -415,10 +418,25 @@ float calc_cost(cycle_node* source,cycle_node* dest)
         node* cur_nd = qopen.begin()->first;
         qopen.erase(qopen.begin());
         int current_automaton_state = cur_nd->state;
+        //map<pair<unsigned long long,unsigned long long>,vector<pair<int,int>>>static_edge_path;
         vector<int> cur_node_info{cur_nd->y,cur_nd->x,current_automaton_state};
         
         if(cur_nd->x==dest->x && cur_nd->y==dest->y)
         {
+            node* temp=cur_nd;
+            vector<vector<int>> path;
+            //path.push_back({cur_nd->x,cur_nd->y});
+             
+            while(temp!=start_nd) 
+            {
+              path.push_back({temp->x,temp->y,temp->state});
+              temp=temp->par;
+            }
+            path.push_back({temp->x,temp->y,temp->state});
+            reverse(path.begin(),path.end());
+
+            static_edge_path.insert(make_pair(make_pair(key(src_vertex),key(dest_vertex)),path)); 
+            
             for(auto it:closed)
             delete it;   
             return(cur_nd->f);
@@ -428,9 +446,8 @@ float calc_cost(cycle_node* source,cycle_node* dest)
         
         if(vis.find(cur_node_k)!=vis.end())
             continue;
-        else
-            vis[cur_node_k]=1;
-
+            
+        vis[cur_node_k]=1;
         vector<int> neigh_state;
 
         point nbh;
@@ -482,7 +499,8 @@ float calc_cost(cycle_node* source,cycle_node* dest)
     closed.push_back(cur_nd);
     
    }
-return(FLT_MAX);
+  static_edge_path.insert(make_pair(make_pair(key(src_vertex),key(dest_vertex)),path));    	
+  return(FLT_MAX);
 
 }
 
@@ -736,7 +754,7 @@ cycle_queue.insert(make_pair(root,key(node_inf1)));
     {
 
       get_path(root->par,root);
-      copy_map(obs1,0); 
+      //copy_map(obs1,0); 
       for(auto it:allnodes)
       {
          it->par=NULL;
@@ -747,18 +765,19 @@ cycle_queue.insert(make_pair(root,key(node_inf1)));
 
     if(visited.find(key(node_inf1))!=visited.end())
     continue;
-    else 
+
     visited.insert(make_pair(key(node_inf1),true));
     
-     mark_obs(par_aut_state);
+    // mark_obs(par_aut_state);
     for(int i=0;i<cur_nd->non_adj.size();i++)
     {  
           node_inf2.clear(); 
-          float cost=calc_cost(cur_nd,cur_nd->non_adj[i]);
-          if(cost==INF)continue;
-              node_inf2.push_back(cur_nd->non_adj[i]->y);
-	      node_inf2.push_back(cur_nd->non_adj[i]->x);
-	      node_inf2.push_back(cur_nd->non_adj[i]->state);         
+          node_inf2.push_back(cur_nd->non_adj[i]->y);
+          node_inf2.push_back(cur_nd->non_adj[i]->x);
+          node_inf2.push_back(cur_nd->non_adj[i]->state);
+          float cost=static_edge_len[make_pair(key(node_inf1),key(node_inf2))];
+          if(cost==INF)
+            continue;         
 
            cycle_node* temp=cur_nd->non_adj[i];
            if(temp==root)
@@ -795,7 +814,7 @@ cycle_queue.insert(make_pair(root,key(node_inf1)));
         
      } 
 
-    copy_map(obs1,0); 
+    //copy_map(obs1,0); 
     if(!flag)flag=true;
 
   }
@@ -804,7 +823,7 @@ cycle_queue.insert(make_pair(root,key(node_inf1)));
     it->par=NULL;
     it->f=FLT_MAX;
   }
-   copy_map(obs1,0); 
+   //copy_map(obs1,0); 
 }
 
 
@@ -945,9 +964,39 @@ void mark_destn(cycle_node* root)
 
 
 
-float calc_dy_cost(cycle_node* source, cycle_node* dest,ull from,ull till=plan_till)
+
+void final_path_gen(int start)
+{
+  
+  int tm=0;
+  //cout<<"in final path gen .....path size is "<<temp_plan.size()<<endl;
+  for(int i=0;i<=temp_plan.rbegin()->first;i++)
+  {
+
+    if(temp_plan.find(i)==temp_plan.end())
+    {
+      vector<int> path{temp_plan[tm][0],temp_plan[tm][1],temp_plan[tm][2]};
+      final_plan.insert({start+i,path});
+
+    }
+    else
+    {
+      tm=i;
+      vector<int> path{temp_plan[tm][0],temp_plan[tm][1],temp_plan[tm][2]};
+      final_plan.insert({start+i,path});
+
+    }      
+
+  } 
+
+}
+
+
+
+float calc_dy_cost(cycle_node* source, cycle_node* dest,ull from,ull till=plan_till,bool gen_path=false)
 {
     
+    //cout<<" in calc_dy_cost() between "<<source->x<<","<<source->y<<" to "<<dest->x<<","<<dest->y<<endl;
    if(source->x==dest->x && source->y==dest->y)
    return(0);
    
@@ -993,6 +1042,7 @@ float calc_dy_cost(cycle_node* source, cycle_node* dest,ull from,ull till=plan_t
     init_vertex[key(src_vertex)]=start_nd;
     init_vertex[key(dest_vertex)]=goal_nd;
     
+    //cout<<"cur_ts and till is "<<cur_ts<<","<<till<<endl;
     while(!qopen.empty() && cur_ts<=till)
     {
         node* cur_nd = qopen.begin()->first;
@@ -1001,14 +1051,28 @@ float calc_dy_cost(cycle_node* source, cycle_node* dest,ull from,ull till=plan_t
         cur_ts=from+cur_nd->g;
         int current_automaton_state = cur_nd->state;
         vector<int> cur_node_info{cur_nd->y,cur_nd->x,current_automaton_state};
+        //cout<<"popping "<<cur_node_info[1]<<","<<cur_node_info[0]<<","<<cur_node_info[2]<<endl;
         
         if(cur_nd->x==dest->x && cur_nd->y==dest->y)
         {
-            node* temp=cur_nd->par;
-            while(temp!=start_nd)
+            //cout<<" found solution \n";
+            if(gen_path)
             {
-             temp=temp->par;
+              temp_plan.clear();
+              node* temp=cur_nd;
+              temp_plan.insert({temp->g,{temp->x,temp->y,dest->state}});              
+              while(temp!=start_nd)
+              {
+                //cout<<"inserting "<<temp->x<<","<<temp->y<<","<<temp->state<<endl;
+                temp=temp->par;
+                temp_plan.insert({temp->g,{temp->x,temp->y,temp->state}});
+
+              }
+                //temp_plan.insert({temp->g,{temp->x,temp->y,temp->state}});
+                
+                final_path_gen(from);
             }
+
             for(auto it:closed)
             delete it;
             return(cur_nd->f);
@@ -1018,7 +1082,6 @@ float calc_dy_cost(cycle_node* source, cycle_node* dest,ull from,ull till=plan_t
         
         if(vis.find(cur_node_k)!=vis.end())
             continue;
-        else
             vis[cur_node_k]=1;
 
         vector<int> neigh_state;
@@ -1083,8 +1146,8 @@ float calc_dy_cost(cycle_node* source, cycle_node* dest,ull from,ull till=plan_t
     closed.push_back(cur_nd);
     
    }
-return(FLT_MAX);
-
+   //cout<<"returning float max \n";
+   return(FLT_MAX);
 
 }
 
@@ -1105,12 +1168,11 @@ void get_static_edge_cost(cycle_node* root)
 
      if(visited.find(key(cur_inf))!=visited.end())
         continue; 
-
-      else
+        
       	visited.insert(make_pair(key(cur_inf),true));
          
          int par_aut_state=cur->state;
-    	 mark_obs(par_aut_state);  
+    	   mark_obs(par_aut_state);  
     	    
          for(auto i:cur->non_adj)
          {
@@ -1198,6 +1260,9 @@ cycle_queue.insert(make_pair(root,key(node_inf1)));
        suf_dy_path.push_back(make_pair(0,root));
        reverse(suf_dy_path.begin(),suf_dy_path.end());
 
+      //for(auto i:suf_dy_path)
+        //cout<<i.second->x<<","<<i.second->y<<","<<i.second->state<<" at "<<i.first<<endl;
+
        float cost=root->f;
        for(auto it:allnodes)
        {
@@ -1215,7 +1280,7 @@ cycle_queue.insert(make_pair(root,key(node_inf1)));
     {
 
           node_inf2.clear();
-	      float cost=ed_cost(cur_nd,cur_nd->non_adj[i],cur_ts);
+	       float cost=ed_cost(cur_nd,cur_nd->non_adj[i],cur_ts);
           if(cost==FLT_MAX)
           continue;
 
@@ -1460,7 +1525,7 @@ cycle_queue.insert(make_pair(start,key(node_inf1)));
     {
 
           node_inf2.clear();       
-	  float cost=ed_cost(cur_nd,cur_nd->non_adj[i],cur_ts);
+	        float cost=ed_cost(cur_nd,cur_nd->non_adj[i],cur_ts);
           if(cost==FLT_MAX)continue;
 
 	  node_inf2.push_back(cur_nd->non_adj[i]->y);
@@ -1833,7 +1898,7 @@ void lla(ull cur_from,ull cur_till,cycle_node* cur, cycle_node* dest, pair<ull,u
  
  while(cur_from<=cur_till)
  {
-;
+
     while( dyq.size()!=0 && ((*dyq.begin())->k<goal->k || goal->rhs!=goal->g))
     {
       node* cur=*dyq.begin();
@@ -2006,7 +2071,7 @@ bool is_dest(cycle_node* nd)
 
 
 
-void get_model_file(cycle_node* new_origin,ull from,ull horizon,cycle_node* previ)
+void get_model_file(cycle_node* new_origin,ull from,ull horizon)
 {
 
 str_to_cy.clear();
@@ -2544,12 +2609,67 @@ fptr<<"(get-model)\n";
 }
 
 
+void generate_path(cycle_node* src,cycle_node* dest, int time)
+{
+  
+  if(src==dest)
+  {
+    //suffix cycle logic
+    //cout<<"suffix cycle logic";
+    get_dy_cy2(src,time,plan_till);
+    auto itr1=suf_dy_path.begin();
+
+      if(itr1==suf_dy_path.end())
+      {
+        //cout<<"returning";
+        return;
+      }
+
+    auto itr2=std::next(itr1);
+    while(itr2!=suf_dy_path.end())
+    {
+      calc_dy_cost(itr1->second,itr2->second,time+itr1->first,plan_till,true);
+      itr1++;
+      itr2++;
+
+    }    
+
+  }
+  else
+  {
+   //prefix path logic
+    //cout<<"Prefix path logic";
+
+    get_dy_pref2(src,dest,time);
+    auto itr1=pwh_pref.begin();
+
+      if(itr1==pwh_pref.end())
+      {
+        //cout<<"returning";
+        return;
+      }
 
 
-pair<bool,int> plan_within_horizon(cycle_node* new_origin,ull from,ull till,cycle_node* prev)
+    auto itr2=std::next(itr1);
+    while(itr2!=pwh_pref.end())
+    {
+      calc_dy_cost(itr1->second,itr2->second,time+itr1->first,plan_till,true);
+      itr1++;
+      itr2++;
+
+    }
+
+  }
+
+
+
+}
+
+
+pair<bool,int> plan_within_horizon(cycle_node* new_origin,ull from,ull len)
 {
 
- get_model_file(new_origin,from,till,prev);
+ get_model_file(new_origin,from,len);
  pwh_plan.clear();
  
  fstream fptr;
@@ -2572,26 +2692,31 @@ pair<bool,int> plan_within_horizon(cycle_node* new_origin,ull from,ull till,cycl
    while(word!="|->")
    {
      if(word=="(error" || fptr.eof() || word=="Warning")
-     return(make_pair(false,INT_MAX));
+     {
+       cout<<"returning because error1\n";
+       return(make_pair(false,INT_MAX));
+     }
      fptr>>word;        
    }
     fptr>>word;
     if(word=="0")
-    return(make_pair(false,INT_MAX));
-    
+    {
+      cout<<"returning because error2\n";
+      return(make_pair(false,INT_MAX));
+    }
    while(word!="T_max")
    {
      fptr>>word;
      if(word=="(error" || fptr.eof())
-     return(make_pair(false,INT_MAX));        
+     {
+      cout<<"returning because error3\n";      
+      return(make_pair(false,INT_MAX));        
+     }
    }
    fptr>>word;
    fptr2<<word<<endl;
-   if(!fptr.eof())
-   {
-      fptr>>word;    
-      fptr2<<word<<endl;
-   }
+   if(!fptr.eof()){fptr>>word;   
+    fptr2<<word<<endl;}
    if(!fptr.eof() )
    final_time=stoi(word);
     while(!fptr.eof())
@@ -2610,7 +2735,7 @@ pair<bool,int> plan_within_horizon(cycle_node* new_origin,ull from,ull till,cycl
           clk=stoi(var.substr(pos+1,var.size()-1));
           if(clk>final_time)
           continue;
-
+          //cout<<"inserting\n";
           pwh_plan.insert(make_pair(clk,str_to_cy[var]));
         }
       }
@@ -2620,7 +2745,18 @@ pair<bool,int> plan_within_horizon(cycle_node* new_origin,ull from,ull till,cycl
   fptr2<<"Final cy completion time is "<<final_time<<endl;
   for(auto i:pwh_plan)
   fptr2<<i.first<<"---"<<i.second->x<<","<<i.second->y<<","<<i.second->state<<endl;
-
+  final_plan.clear();
+  auto itr1=pwh_plan.begin();
+  auto itr2=std::next(itr1);
+  while(itr2!=pwh_plan.end())
+  {
+    generate_path(itr1->second,itr2->second,itr1->first);
+    //fptr2<<i.first<<"---"<<i.second->x<<","<<i.second->y<<","<<i.second->state<<endl;
+    itr1++;
+    itr2++;
+  }
+  //for(auto i:final_plan)
+   // cout<<i.first<<" --- "<<i.second[0]<<","<<i.second[1]<<","<<i.second[2]<<endl;
  fptr.close();
  fptr2.close();
  fptr2<<"returning true\n";
@@ -2661,7 +2797,7 @@ cycle_queue.insert(make_pair(src,key(node_inf1)));
        pref_path.clear();
        cycle_node* temp =dest;
        float cost=cur_nd->f;
-       copy_map(obs1,0); 
+       //copy_map(obs1,0); 
        while(temp!=src)
        {
          pref_path.push_back(make_pair(temp->f,temp));
@@ -2680,7 +2816,7 @@ cycle_queue.insert(make_pair(src,key(node_inf1)));
     if(visited.find(key(node_inf1))!=visited.end())
     continue;
     
-    mark_obs(cur_nd->state);
+    //mark_obs(cur_nd->state);
     for(int i=0;i<cur_nd->non_adj.size();i++)
     {
           node_inf2.clear();       
@@ -2688,8 +2824,9 @@ cycle_queue.insert(make_pair(src,key(node_inf1)));
           node_inf2.push_back(cur_nd->non_adj[i]->x);
           node_inf2.push_back(cur_nd->non_adj[i]->state); 
 
-	  float cost=static_edge_len[make_pair(key(node_inf1),key(node_inf2))];
-          if(cost==FLT_MAX)continue;      
+	        float cost=static_edge_len[make_pair(key(node_inf1),key(node_inf2))];
+          if(cost==FLT_MAX)
+            continue;      
 
            cycle_node* temp=cur_nd->non_adj[i];
            if(temp->f > cur_nd->f+cost)
@@ -2705,7 +2842,7 @@ cycle_queue.insert(make_pair(src,key(node_inf1)));
         
      } 
     visited.insert(make_pair(key(node_inf1),true));
-    copy_map(obs1,0); 
+    //copy_map(obs1,0); 
   }
   for(auto it:allnodes)
   {
@@ -2713,178 +2850,6 @@ cycle_queue.insert(make_pair(src,key(node_inf1)));
    it->f=FLT_MAX;
   }
  return(FLT_MAX);
-
-}
-
-
-
-dstar_inf get_position(cycle_node* source, cycle_node* dest,ull from, int index)
-{
-
-    unordered_map<long long int,node* > init_vertex;
-    unordered_map<long long int,int > vis;
-    vector<node*>temp_path;
-    dstar_inf pos;
-    int i;
-    pos.x=source->x;
-    pos.y=source->y;
-    pos.state=source->state;
-    
-    
-    long long wait_time=0;
-    vector<int> node_inf={source->y,source->x,source->state};
-    ull cur_ts=from; 
-
-    node* start_nd = new node;
-    start_nd->x=source->x;
-    start_nd->y=source->y;
-    start_nd->state=source->state;
-    start_nd->g=0; 
-    
-    mark_obs(source->state); 
-    
-    node* goal_nd= new node;
-    goal_nd->x=dest->x;
-    goal_nd->y=dest->y;
-    goal_nd->state=dest->state;
-    goal_nd->h=0;
-    goal_nd->g=FLT_MAX;
-
-    
-    start_nd->h=get_initial_heuristic(start_nd,goal_nd);
-    start_nd->f=start_nd->g+start_nd->h;
-
-
-    node_oq qopen;
-    vector<node*> closed;
-    qopen.insert(make_pair(start_nd,key(node_inf)));
-
-    vector<int> src_vertex={start_nd->y,start_nd->x,start_nd->state};  
-    vector<int> dest_vertex={goal_nd->y,goal_nd->x,goal_nd->state};        
-    
-    init_vertex[key(src_vertex)]=start_nd;
-    init_vertex[key(dest_vertex)]=goal_nd;
-    
-    while(!qopen.empty())
-    {
-        node* cur_nd = qopen.begin()->first;
-        qopen.erase(qopen.begin());
-
-        cur_ts=from+cur_nd->g;
-        int current_automaton_state = cur_nd->state;
-        vector<int> cur_node_info{cur_nd->y,cur_nd->x,current_automaton_state};
-        
-        if(cur_nd->x==dest->x && cur_nd->y==dest->y)
-        {
-    
-            copy_map(obs1,0); 
-            node* temp=cur_nd->par;
-
-            temp_path.push_back(cur_nd);
-            while(temp!=start_nd)
-            {
-             temp_path.push_back(temp);              
-             temp=temp->par;
-            }
-            temp_path.push_back(start_nd);
-            reverse(temp_path.begin(),temp_path.end());
-            
-            for(i=0;i<temp_path.size()-1;i++)
-            {
-             if(temp_path[i]->g == index)
-             break;
-             else if(temp_path[i]->g<index && temp_path[i+1]->g>index)
-             break;
-            }
-            
-            if(i==temp_path.size()-1)
-            {
-             if(index!=temp_path[i]->g)
-             i--;
-            
-            }
-            
-            pos.x=temp_path[i]->x;
-            pos.y=temp_path[i]->y;
-            pos.state=temp_path[i]->state;
-           
-            for(auto it:closed)free(it);
-            return(pos);
-        }
-
-        long long int cur_node_k = key(cur_node_info);
-        
-        if(vis.find(cur_node_k)!=vis.end())
-            continue;
-        else
-            vis[cur_node_k]=1;
-
-        vector<int> neigh_state;
-
-        point nbh;
-        for(int i=0;i<dir;i++)
-        {
-            wait_time=0;
-            if(!valid(cur_nd->y+nb[i][0],cur_nd->x+nb[i][1]) && ((cur_nd->y+nb[i][0])!=dest->y || (cur_nd->x+nb[i][1]!=dest->x)))
-                continue;
-
-
-            nbh.y =  cur_nd->y+nb[i][0];
-            nbh.x =  cur_nd->x+nb[i][1];
-            neigh_state = vector<int>(0);
-            neigh_state.push_back(nbh.y);
-            neigh_state.push_back(nbh.x);
-            neigh_state.push_back(current_automaton_state);
-
-
-            node* oldtmp;
-            if(grid_dy.find(make_pair(nbh.x,nbh.y))!=grid_dy.end())
-            {
-             
-             wait_time=(grid_dy[make_pair(nbh.x,nbh.y)]-cur_ts);
-             if(wait_time<=0)
-             wait_time=0;
-            }
-              
-            if(init_vertex.find(key(neigh_state))==init_vertex.end())
-            {   
-                node* neigh_node = new_node(nbh.x,nbh.y,current_automaton_state);           
-                neigh_node->g = cur_nd->g+1+wait_time;
-
-                neigh_node->h = get_initial_heuristic(neigh_node,goal_nd);           
-                neigh_node->f = neigh_node->g+neigh_node->h;
-                neigh_node->par = cur_nd;
-                
-                init_vertex.insert(make_pair(key(neigh_state),neigh_node) );
-                qopen.insert(make_pair(neigh_node,key(neigh_state)));
-
-            }
-            else
-            {
-
-                oldtmp = init_vertex[key(neigh_state)];
-                if(oldtmp->g > (cur_nd->g+1+wait_time) )
-                {
-                    if(qopen.find(oldtmp)!=qopen.end())
-                    qopen.erase(qopen.find(oldtmp));
-
-                    oldtmp->g = cur_nd->g+1+wait_time;
-                    oldtmp->f = oldtmp->g+oldtmp->h;
-                    oldtmp->par = cur_nd;
-                    init_vertex[key(neigh_state)]=oldtmp;
-                    qopen.insert(make_pair(oldtmp,key(neigh_state)));
-                    
-                }
-
-            }
-
-        }
-
-    closed.push_back(cur_nd);
-    
-   }
-       copy_map(obs1,0); 
-       return(pos);
 
 }
 
@@ -2924,9 +2889,44 @@ double mx(double a,double b)
 }
 
 
+void remove_obs()
+{
+  while(global_ts>=dec_time)
+  {
+
+    for(auto it:dynamic_obstacles.begin()->second)
+    {
+      if(grid_dy.find(make_pair(it.first,it.second))!=grid_dy.end())
+      {
+        pair<int,int> xy(it.first,it.second);
+        if(grid_dy[xy]<=global_ts) 
+        grid_dy.erase(grid_dy.find(make_pair(it.first,it.second)));
+      }
+    }      
+   dynamic_obstacles.erase(dynamic_obstacles.begin()); 
+   dec_time=(dynamic_obstacles.size()==0?LONG_MAX:dynamic_obstacles.begin()->first);
+  }
+}
+
+
+
+bool rdest(vector<int> &coords)
+{
+ 
+      for(auto i:graph_root)
+       if(coords[0]==i.first.x && coords[1]==i.first.y && coords[2]==i.first.state)
+       return(true);
+       
+      return(false);
+
+
+}
+
+
+
 int main(int args,char **argv)
 {
-
+    
     int x,y,num_obs;
     ull dur;
     long long plan_comp=LONG_MAX;
@@ -2939,11 +2939,14 @@ int main(int args,char **argv)
     double t3=0.0;
     double mxt=0.0,t3m=0.0,t2m=0.0;
     fstream res;
+    int ptime=1;
+    int cycle_count=0;
+    global_ts=0;
     
     res.open("result.txt",ios::out );
     if(!res)
     {
- 	    cout<<"Open failed for result file\n";
+ 	      cout<<"Open failed for result file\n";
         return(0);
     }
     
@@ -2965,13 +2968,13 @@ int main(int args,char **argv)
    
     horizon_len=stoi(argv[3]);
     plan_till=stoi(argv[4]);
+    get_static_edge_cost(origin);    
 
     for(auto i:graph_root)
      {
         get_min_cycle(i.second);
      }
-       
-    get_static_edge_cost(origin);
+    
 
     static_pref.clear();
     for(auto i:cy_created)
@@ -3003,9 +3006,19 @@ int main(int args,char **argv)
    }   
    else
    {
-     pwh_plan.clear();
-     for(auto i:static_pref)
-     pwh_plan[i.first]=i.second;
+     final_plan.clear();
+     final_plan[0]={0,0,0};
+     
+     for(auto i=0;i<static_pref.size()-1;i++)
+     {
+        vector<int> inf1{static_pref[i].second->y,static_pref[i].second->x,static_pref[i].second->state};
+        vector<int> inf2{static_pref[i+1].second->y,static_pref[i+1].second->x,static_pref[i+1].second->state};
+        
+        
+        for(int j=1;j<static_edge_path[{key(inf1),key(inf2)}].size();j++)
+           final_plan[ptime++]=static_edge_path[{key(inf1),key(inf2)}][j];
+
+     }
 
    }
    
@@ -3014,202 +3027,117 @@ int main(int args,char **argv)
     reader2>>obs_ts;
     if(obs_ts==-1)
     obs_ts=plan_till+1;
-    
+  
     check_time=min(obs_ts,plan_till);
-    while(1)
-    { 
-      pref_cost+=suff_best;
-      pwh_plan.insert(make_pair(pref_cost,current_best));
-      if(pref_cost>check_time)
-      break;
-
-    }
-
-	while(global_ts<plan_till)
-	{
-	  cycle_node* prev=pwh_plan.begin()->second;
-	  cycle_node* cur;
-	  int ts;
-	  
-  	  pwh_plan.erase(pwh_plan.begin());
-	  while(global_ts<check_time && pwh_plan.size()!=0)
-	  {
-
-	    cur=pwh_plan.begin()->second;
-	    ts=pwh_plan.begin()->first;
-	    if(ts>=plan_till)
-        { 
-          if(ts==plan_till && is_dest(cur) && prev_f!=NULL && prev_f==cur)
-          {
-            res<<"Moving from "<<prev->x<<","<<prev->y<<","<<prev->state<<" to "<<cur->x<<","<<cur->y<<","<<cur->state<<" at ts = "<<ts<<endl;
-            cycle_count++;
-          }
-           break;
-        }
-	    if(ts>=check_time)   
-	     break;
-	    else
-	    {
-	      res<<"Moving from "<<prev->x<<","<<prev->y<<","<<prev->state<<" to "<<cur->x<<","<<cur->y<<","<<cur->state<<" at ts = "<<ts<<endl;
-	      if(is_dest(cur))
-	      {
-             if(prev_f==cur)
-	           cycle_count++;
-	         else
-	           prev_f=cur;
-	       }
-	      prev=cur;
-	      global_ts=ts;
-	      pwh_plan.erase(pwh_plan.begin());
-	    } 	    
-        while(global_ts>=dec_time)
+     
+     while(ptime<=check_time)
+     { 
+        for(int i=0;i<all_suf_cycle[current_best].second.size()-1;i++)
         {
-            for(auto it:dynamic_obstacles.begin()->second)
+          cycle_node* src=all_suf_cycle[current_best].second[i].second;
+          cycle_node* dest=all_suf_cycle[current_best].second[i+1].second;
+
+          vector<int> inf1{src->y,src->x,src->state};
+          vector<int> inf2{dest->y,dest->x,dest->state};          
+         
+           for(int j=1;j<static_edge_path[{key(inf1),key(inf2)}].size();j++)
+           final_plan[ptime++]=static_edge_path[{key(inf1),key(inf2)}][j];
+
+
+        }
+
+     }
+      vector<int> prev_pos,next_pos;
+
+      while(global_ts<plan_till)
+      {
+      	while(global_ts<plan_till && final_plan.find(global_ts)!=final_plan.end() && final_plan.find(global_ts+1)!=final_plan.end())
+      	{
+          //res<<"here!!!";
+          prev_pos=final_plan[global_ts];
+          next_pos=final_plan[global_ts+1]; 
+          if(global_ts==check_time)
+            break;
+
+          if(global_ts==dec_time)
+            remove_obs();
+
+          if(rdest(next_pos))
+          {
+            //i.e. the position at which the robot is going to move is a destination node
+            if(prev_final.size()==0)
+              prev_final=next_pos;
+            else
             {
-                if(grid_dy.find(make_pair(it.first,it.second))!=grid_dy.end())
+             if(prev_final==next_pos)
+             {
+              //i.e the next position at which the robot is moving is the last destination node the robot visited 
+              if(prev_pos!=next_pos)//Not waiting
                 {
-                    pair<int,int> xy(it.first,it.second);
-                    if(grid_dy[xy]<=global_ts) 
-                    grid_dy.erase(grid_dy.find(make_pair(it.first,it.second)));
+                  res<<"completed one cycle here \n";
+                  cycle_count++;
                 }
-            }	    
-            dynamic_obstacles.erase(dynamic_obstacles.begin()); 
-            dec_time=(dynamic_obstacles.size()==0?LLONG_MAX:dynamic_obstacles.begin()->first);
+             }
+             else
+              prev_final=next_pos;//change the cycle origin node
+            }
+
+          }
+         
+          res<<prev_pos[0]<<" "<<prev_pos[1]<<endl;
+          ++global_ts;
+          //res<<"Moving from "<<prev_pos[0]<<","<<prev_pos[1]<<","<<prev_pos[2]<<" to "<<next_pos[0]<<","<<next_pos[1]<<","<<next_pos[2]<<"at ts="<<++global_ts<<endl;
+          prev_pos=next_pos;
+          //global_ts++;
+          //Insert ros code here
         }
 
-	  }
-	  
-	  if(ts>=plan_till)
-	  break;
-	  
-	  if(pwh_plan.size()==0)
-	  {
-	    recheck=true;
-	    new_origin=cur;
-	  }  
-	  						
-	  else if(ts==check_time)
-	  {
 
-	    new_origin=cur;
-	    new_origin->f=FLT_MAX;
-	    global_ts=check_time;
-	    res<<"Moving from "<<prev->x<<","<<prev->y<<","<<prev->state<<" to "<<new_origin->x<<","<<new_origin->y<<","<<new_origin->state<<" at ts = "<<global_ts<<endl;
-	    if(is_dest(new_origin))
-        { 
-          if(prev_f!=NULL && prev_f==new_origin)
-          cycle_count++;
-          prev_f=new_origin;
+
+        if(global_ts>=plan_till)
+        {
+           res<<"1)Z3's number of cycle is "<<cycle_count<<endl;
+           return(0);
         }
-	  }
-	  else 
-	  {
-	    if(prev==cur)
-	    { 
-	      float cy_cost=get_dy_cy(prev,global_ts,plan_till);
-
-	      for(int i=1;i<suf_dy_path.size();i++)
-	      {
-	        if(global_ts+suf_dy_path[i].first==check_time)
-		    {
-        	  global_ts=check_time;
-        	  new_origin=suf_dy_path[i].second;
-        	  new_origin->f=FLT_MAX;
-        	  break;
-		    }
-    		else if(global_ts+suf_dy_path[i].first>check_time)
-    		{
-    		  global_ts=global_ts+suf_dy_path[i-1].first;
-    		  int index=check_time-global_ts;
-    		  dstar_inf pos=get_position(suf_dy_path[i-1].second,suf_dy_path[i].second,global_ts,index);
-    		  
-    		  vector<int> node_inf={pos.y,pos.x,pos.state};
-    		  if(cy_created.find(key(node_inf))!=cy_created.end())
-    		  {
-    		    new_origin=cy_created[key(node_inf)];
-    		    new_origin->f=FLT_MAX;
-    		  }
-    		  else
-    		  {
-    		    new_origin=new_cycle_node(pos.x,pos.y,pos.state);
-    		    cy_created.insert(make_pair(key(node_inf),new_origin));
-    		  }
-    		  global_ts=check_time;
-    		  break;
-		    }
-	      }
-	     
-	    }
-	    else
-	    {
-    	  float cy_cost=get_dy_pref(prev,cur,global_ts);
-	      auto i=pwh_pref.begin();
-	      i++;
-	      for(;i!=pwh_pref.end();i++)
-	      {
-	       if(global_ts+i->first==check_time)
-		   {
-        	  global_ts=check_time;
-        	  new_origin=i->second;
-        	  new_origin->f=FLT_MAX;
-        	  break;
-		    }
-        	else if((global_ts+i->first)>check_time)
-        	{
-        	  auto j=std::prev(i,1);
-        	  global_ts=global_ts+j->first;
-        	  int index=check_time-global_ts;
-        	  dstar_inf pos=get_position(j->second,i->second,global_ts,index);
-        	  
-        	  vector<int> node_inf={pos.y,pos.x,pos.state};
-        	  if(cy_created.find(key(node_inf))!=cy_created.end())
-        	  {
-        	    new_origin=cy_created[key(node_inf)];
-        	    new_origin->f=FLT_MAX;
-        	    
-        	  }
-        	  else
-        	  {
-        	    new_origin=new_cycle_node(pos.x,pos.y,pos.state);
-        	    cy_created.insert(make_pair(key(node_inf),new_origin));
-        	  }
-        	  global_ts=check_time;
-        	  break;
-        	}
-	       }
-
-	    }
-	    
-        res<<"Moving from "<<prev->x<<","<<prev->y<<","<<prev->state<<" to "<<new_origin->x<<","<<new_origin->y<<","<<new_origin->state<<" at ts = "<<global_ts<<endl;
-        if(is_dest(new_origin))
-        { 
-          if(prev_f!=NULL && prev_f==new_origin)
-           cycle_count++;
-           prev_f=new_origin;
-        }
+        //Replan logic
+        vector<int> v{prev_pos[1],prev_pos[0],prev_pos[2]};
+        if(cy_created.find(key(v))!=cy_created.end())
+        {
+          new_origin=cy_created[key(v)];
+          new_origin->f=FLT_MAX;
+          //res<<"new_origin is "<<new_origin->x<<","<<new_origin->y<<","<<new_origin->state<<endl;
           
-	  }         
-	  if(check_time==obs_ts)
-	  {
-	      recheck=true;
-	      reader2>>num_obs;
+        }
+        else
+        {
+          new_origin=new_cycle_node(prev_pos[0],prev_pos[1],prev_pos[2]);
+          cy_created.insert(make_pair(key(v),new_origin));
+          //res<<"new_origin is "<<new_origin->x<<","<<new_origin->y<<","<<new_origin->state<<endl;
 
-	      for(int i=0;i<num_obs;i++)
-	      {
-        	reader2>>x;
-        	reader2>>y;
-        	reader2>>dur;
-        	ull max_time;
-		
-		    vector<int> nd_inf={x,y};
-		    string s=conv_vec_to_string(nd_inf);
-		
-	        if(x==new_origin->x && y==new_origin->y)
-		    {
-		      res<<"Algo cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
-		      return(0);
-		    }
-		
+        }
+        if(final_plan.find(global_ts)==final_plan.end() || final_plan.find(global_ts+1)==final_plan.end())
+          recheck=true;
+        if(global_ts==obs_ts)
+        {
+          recheck=true;
+          reader2>>num_obs;
+
+          for(int i=0;i<num_obs;i++)
+          {
+            reader2>>x;
+            reader2>>y;
+            reader2>>dur;
+            ull max_time;
+
+            vector<int> nd_inf={x,y};
+            string s=conv_vec_to_string(nd_inf);
+
+            if(x==new_origin->x && y==new_origin->y)
+            {
+              res<<"Algo cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
+              return(0);
+            }
+
             if(grid_dy.find(make_pair(x,y))!=grid_dy.end())
             {
                if(grid_dy[make_pair(x,y)]<(long long)(obs_ts+dur))
@@ -3224,123 +3152,106 @@ int main(int args,char **argv)
                grid_dy[make_pair(x,y)]=obs_ts+dur;
                dynamic_obstacles[(obs_ts+dur)].push_back(make_pair(x,y));
             }
-	      }
+          }
 
-	       reader2>>obs_ts;
-	       if(obs_ts==-1)
-	       obs_ts=plan_till+1;
+          reader2>>obs_ts;
+          if(obs_ts==-1)
+          obs_ts=plan_till+1;
+           
+          check_time=min(obs_ts,plan_till);           
+          dec_time=(dynamic_obstacles.size()==0?LONG_MAX:dynamic_obstacles.begin()->first); 
+        }
+         if(global_ts==dec_time)
+          remove_obs();
+        //Repeatative SMT Solver Planning Logic
 
-           check_time=min(obs_ts,plan_till);
-           dec_time=(dynamic_obstacles.size()==0?LLONG_MAX:dynamic_obstacles.begin()->first); 
-	    }
-        while(global_ts>=dec_time)
+        if(recheck)
         {
-          for(auto it:dynamic_obstacles.begin()->second)
+
+        create_graph(new_origin);
+        put_new_cost(new_origin);
+
+        while(!plan_found)
+        {
+          global_ts+=tcomp;
+          int tc=tcomp;
+          // while(tc--)
+          //   res<<new_origin->x<<" "<<new_origin->y<<endl;
+          //res<<"Waiting at "<<new_origin->x<<" "<<new_origin->y<<new_origin->state<<endl;
+          final_plan.clear();
+          if(global_ts>=plan_till)
           {
-           if(grid_dy.find(make_pair(it.first,it.second))!=grid_dy.end())
-           {
-             pair<int,int> xy(it.first,it.second);
-             if(grid_dy[xy]<=global_ts) 
-             grid_dy.erase(grid_dy.find(make_pair(it.first,it.second)));
-           }
-          }	    
-           dynamic_obstacles.erase(dynamic_obstacles.begin()); 
-           dec_time=(dynamic_obstacles.size()==0?LONG_MAX:dynamic_obstacles.begin()->first);
-        }
-	    
-	    if(check_time==plan_comp)
-            recheck=true;
-            
-	    if(recheck)
-	    { 
-  
-	       create_graph(new_origin);
-	       put_new_cost(new_origin);
-	       	       
-	       while(!plan_found)
-	       {
-                global_ts+=tcomp;
-                if(global_ts>=plan_till)
+            res<<" 2)Z3's  Number of cycle traversed = "<<cycle_count<<" global_ts "<<global_ts<<" plan till is "<<plan_till<<endl;
+            return(0);
+          }   
+
+          while(obs_ts<=global_ts)
+          {
+            reader2>>num_obs;
+            for(int i=0;i<num_obs;i++)
+            {
+              reader2>>x;
+              reader2>>y;
+              reader2>>dur;
+              ull max_time;
+
+              vector<int> nd_inf={x,y};
+              string s=conv_vec_to_string(nd_inf);
+
+              if(x==new_origin->x && y==new_origin->y)
+              {
+                res<<"Algo cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
+                return(0);
+              }
+
+              if(grid_dy.find(make_pair(x,y))!=grid_dy.end())
+              {
+                if(grid_dy[make_pair(x,y)]<(long long)(obs_ts+dur))
                 {
-                    res<<"Z3's  Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
-                    return(0);
-                }
-                while(obs_ts<=global_ts)
-                {
-                    reader2>>num_obs;
-                    for(int i=0;i<num_obs;i++)
-                    {
-                        reader2>>x;
-                        reader2>>y;
-                        reader2>>dur;
-                        ull max_time;
+                  grid_dy[make_pair(x,y)]=obs_ts+dur;
+                  dynamic_obstacles[(obs_ts+dur)].push_back(make_pair(x,y));                   
+                } 
 
-                        vector<int> nd_inf={x,y};
-                        string s=conv_vec_to_string(nd_inf);
+             }
+             else
+             {
+                grid_dy[make_pair(x,y)]=obs_ts+dur;
+                dynamic_obstacles[(obs_ts+dur)].push_back(make_pair(x,y));
+             }
+            }
 
-                        if(x==new_origin->x && y==new_origin->y)
-                        {
-                            res<<"Algo cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
-                            return(0);
-                        }
-                        if(grid_dy.find(make_pair(x,y))!=grid_dy.end())
-                        {
-                            if(grid_dy[make_pair(x,y)]<(long long)(obs_ts+dur))
-                            {
-                                grid_dy[make_pair(x,y)]=obs_ts+dur;
-                                dynamic_obstacles[(obs_ts+dur)].push_back(make_pair(x,y));                   
-                            } 
+            reader2>>obs_ts;
+            if(obs_ts==-1)
+            obs_ts=plan_till+1;
 
-                        }
-                        else
-                        {
-                            grid_dy[make_pair(x,y)]=obs_ts+dur;
-                            dynamic_obstacles[(obs_ts+dur)].push_back(make_pair(x,y));
-                        }
-                    }
-
-                    reader2>>obs_ts;
-                    if(obs_ts==-1)
-                    obs_ts=plan_till+1;
-
-                    dec_time=(dynamic_obstacles.size()==0?LLONG_MAX:dynamic_obstacles.begin()->first);
-                    check_time=min(obs_ts,plan_till);           
-                }	
-                while(dec_time<=global_ts)
-                {
-                  for(auto it:dynamic_obstacles.begin()->second)
-                  {
-                   if(grid_dy.find(make_pair(it.first,it.second))!=grid_dy.end())
-                   {
-                     pair<int,int> xy(it.first,it.second);
-                     if(grid_dy[xy]<=global_ts) 
-                     grid_dy.erase(grid_dy.find(make_pair(it.first,it.second)));
-                   }
-                  }     
-                   dynamic_obstacles.erase(dynamic_obstacles.begin()); 
-                   dec_time=(dynamic_obstacles.size()==0?LONG_MAX:dynamic_obstacles.begin()->first);
-                }
-
-                long long len=min(horizon_len-1,plan_till-global_ts);	       
-                get_dy_edge_cost(new_origin,global_ts,len);
-
-                pair<bool,int>temp=plan_within_horizon(new_origin,global_ts,len,prev_f);
-                plan_found=temp.first;
-                plan_comp=temp.second;
-                check_time=min({obs_ts,plan_till,plan_comp});
-
-	      }
-		 plan_found=false;    
-         recheck=false;
-        }
+            dec_time=(dynamic_obstacles.size()==0?LONG_MAX:dynamic_obstacles.begin()->first);
+            check_time=min({obs_ts,plan_till});     
+          }
+          
+          while(dec_time<=global_ts)
+           remove_obs();
 
 
-	   }    	
-	    res<<"Z3's  Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
-        res.close();
-        return(0);
+
+          long long len=min(horizon_len-1,plan_till-global_ts);        
+          get_dy_edge_cost(new_origin,global_ts,len);
+
+          pair<bool,int>temp=plan_within_horizon(new_origin,global_ts,len);
+          plan_found=temp.first;
+          plan_comp=temp.second;
+          check_time=min({obs_ts,plan_till,plan_comp});
+
+
+
+      }
+      plan_found=false;
+      recheck=false;
+
+     }
+
+   }
+  // This must be the end of infinite planning
+  res<<"3)Z3's  Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
+  res.close();
+  return(0);
 }
-
-
-
-

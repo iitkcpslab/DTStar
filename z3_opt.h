@@ -4,7 +4,7 @@ namespace planner_info
 {
 
 
-int obs_ts=INT_MAX;
+//int obs_ts=INT_MAX;
 long long plan_till;
 long long horizon_len;
 int sz=10,qtot=3;
@@ -381,17 +381,22 @@ vector<pair<float,cycle_node*>>suf_dy_path;
 
 
 map<pair<unsigned long long,unsigned long long>,float>static_edge_len;
+map<pair<unsigned long long,unsigned long long>,vector<vector<int>>>static_edge_path; // DS for discrete path
+map<int,vector<int>> final_plan; //Discrete path
+vector<int> prev_final;
 map<pair<unsigned long long,unsigned long long>,vector<pair<unsigned long long,float>>>dyn_edge_len; 
 
 map< int,cycle_node*> pwh_plan;
 map< int,cycle_node*> pwh_pref;
 map< int,cycle_node*> pwh_suf;
+map< int,vector<int>> temp_plan;
+
 
 //vector<pair<unsigned int,cycle_node*>> pwh_suffix;
 cycle_node* prev_f=NULL;
 cycle_node* cur_f=NULL;
 int cycle_count=0;
-
+long long obs_ts=LLONG_MAX,check_time=LLONG_MAX,dec_time=LLONG_MAX;
 
 /* GUROBI Data Structures */
 unordered_map<string,cycle_node*> str_to_cy;
