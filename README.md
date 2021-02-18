@@ -9,7 +9,7 @@ https://spot.lrde.epita.fr/install.html
 Install Spot-2.6/2.8 tool for LTL2TGBA converter
 Check if the tool is working by running example command in the current folder:
 ./ltl2tgba --spin '<>p && <>q'
-Copy the ltl2tgba file from the bin folder of spot installation and copy it to the folder with z3_opt.cpp 
+Copy the ltl2tgba file from the bin folder of spot installation to the folder with z3_opt.cpp 
 
 
 
@@ -77,8 +77,8 @@ Example file:
 To compile :
 ............
 1)g++ z3_opt -std=c++11 -o z3_opt
-2)g++ greedy1.cpp -g -std=c++11 -o greedy1
-3)g++ greedy2.cpp -g -std=c++11 -o greedy2
+2)g++ greedy1.cpp -std=c++11 -o greedy1
+3)g++ greedy2.cpp -std=c++11 -o greedy2
 
 
 To run :
@@ -88,9 +88,9 @@ To run :
 3)./greedy2 static.txt dynamic.txt Total_planning_time
 
 eg:
-1)./z3_opt static dynamic 200 500|> model_soln.txt
+1)./z3_opt static dynamic 50 500|> model_soln.txt
 2)./greedy1 static dynamic 500
-3).//greedy2 static dynamic 500
+3)./greedy2 static dynamic 500
 
 This means that based on the query given in query.dat, environment in static file and dynamic changes mentioned in dynamic.txt, the z3 generates a solution given in "result.txt". "Model_soln.txt" will contain the model solution for each plan_in_horizon call. Horizon length for above example is 200 timestamps and total planning time is 500 timestamps. For greedy algorithms we dont need horizon length.
 
