@@ -433,6 +433,7 @@ float calc_cost(cycle_node* source,cycle_node* dest)
               temp=temp->par;
             }
             path.push_back({temp->x,temp->y,temp->state});
+            path[0][2]=dest->state;		
             reverse(path.begin(),path.end());
 
             static_edge_path.insert(make_pair(make_pair(key(src_vertex),key(dest_vertex)),path)); 
