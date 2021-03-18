@@ -1,4 +1,3 @@
-#include<bits/stdc++.h>
 #include"greedy.h"
 #include<unistd.h>
 #define mx_steps 50000
@@ -1808,7 +1807,7 @@ int main(int args,char **argv)
     
     fstream res;
     
-    res.open("result.txt",ios::out);
+    res.open("result.txt",ios::out|ios::app);
     if(!res)
     {
  	cout<<"Open failed for result file\n";
@@ -1931,7 +1930,7 @@ int main(int args,char **argv)
                  cycle_count++;
                  }
               }
-               res<<"Greedy1 Number of cycles completed are "<<cycle_count<<" till "<<global_ts<<endl;
+               res<<"Greedy1 Number of cycles completed are "<<cycle_count<<endl;
                return(0);
             }
 	    if(ts>=check_time)   
@@ -1979,7 +1978,7 @@ int main(int args,char **argv)
 	  {  
 	    if(ts>plan_till)
 	    {
-	           res<<"Greedy1 Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
+	           res<<"Greedy1 Number of cycle traversed = "<<cycle_count<<endl;
 	           return(0);
 	    } 
 	    if(prev->x==cur->x && prev->y==cur->y)
@@ -2049,7 +2048,6 @@ int main(int args,char **argv)
 
 	    }	      
              res<<"Moving from "<<prev->x<<","<<prev->y<<","<<prev->state<<" to "<<new_origin->x<<","<<new_origin->y<<","<<new_origin->state<<" at ts = "<<check_time<<endl;
-;
              if(is_dest(new_origin))
              { 
                if(prev_f!=NULL && prev_f==new_origin)
@@ -2089,7 +2087,7 @@ int main(int args,char **argv)
 		
 	        if(x==new_origin->x && y==new_origin->y)
 		{
-		 res<<"Greedy cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
+		 res<<"Greedy1 cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
 		 return(0);
 		}
 		if(grid_dy.find(make_pair(x,y))!=grid_dy.end())
@@ -2125,7 +2123,7 @@ int main(int args,char **argv)
 	    { 
 	           if(global_ts==plan_till)
 	           {
-	            res<<"Greedy1 Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
+	            res<<"Greedy1 Number of cycle traversed = "<<cycle_count<<endl;
 	            return(0);
 	           }
 
@@ -2174,21 +2172,28 @@ int main(int args,char **argv)
 		   if(best_pref==FLT_MAX || best_suff==FLT_MAX)
 		   {
 		      //display_graph(new_origin);
-		      if(prev_f!=NULL)
+		      while(obs_ts<=plan_till)
 		      {
-		        float cost=get_dy_pref(new_origin,prev_f,check_time);
-     		        if(cost!=FLT_MAX && new_origin!=prev_f)
-     		        {
-     		          res<<"Moving from "<<new_origin->x<<","<<new_origin->y<<","<<new_origin->state<<" to "<<prev_f->x<<","<<prev_f->y<<","<<prev_f->state<<" at ts = "<<check_time+cost<<endl;
-;
-			  global_ts=global_ts+cost;
-			  cycle_count++;
-     		        
-     		         }
-     		      }
-    
-		     res<<"Greedy1 Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
-		     //display_graph(new_origin);
+			      reader2>>num_obs;
+			      ull max_time;	      
+			      for(int i=0;i<num_obs;i++)
+			      {
+				reader2>>x;
+				reader2>>y;
+				reader2>>dur;
+
+				if(x==new_origin->x && y==new_origin->y)
+				{
+				 res<<"Greedy1 cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
+				 return(0);
+				}
+
+			       }
+			       reader2>>obs_ts;
+			       if(obs_ts==-1)
+			       obs_ts=plan_till+1;
+		      } 
+		     res<<"Greedy1 Number of cycle traversed = "<<cycle_count<<endl;
 		     return(0);
 		      
 		   }
@@ -2212,7 +2217,7 @@ int main(int args,char **argv)
 
 	  
 	}
-	res<<"Greedy Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
+	res<<"Greedy1 Number of cycle traversed = "<<cycle_count<<endl;
 
 return(0);
 }

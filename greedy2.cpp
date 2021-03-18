@@ -1,4 +1,3 @@
-#include<bits/stdc++.h>
 #include"greedy.h"
 #include<unistd.h>
 #define mx_steps 50000
@@ -1767,7 +1766,7 @@ int main(int args,char **argv)
     
     fstream res;
     
-    res.open("result.txt",ios::out);    
+    res.open("result.txt",ios::out|ios::app);    
     if(!res)
     {
  	cout<<"Open failed for result file\n";
@@ -2055,7 +2054,7 @@ int main(int args,char **argv)
 	    { 
 	           if(global_ts==plan_till)
 	           {
-	           res<<"Greedy2 Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
+	           res<<"Greedy2 Number of cycle traversed = "<<cycle_count<<endl;
 	           return(0);
 	           }
 	           
@@ -2100,18 +2099,29 @@ int main(int args,char **argv)
 		   if(plan_cost==FLT_MAX)
 		   {
 
-		      if(prev_f!=NULL)
+		      while(obs_ts<=plan_till)
 		      {
-		        float cost=get_dy_pref(new_origin,prev_f,check_time);
-     		        if(cost!=FLT_MAX && new_origin!=prev_f)
-     		        {
-			  global_ts=global_ts+cost;
-			  cycle_count++;
-     		        
-     		         }
-     		      }
-		     res<<"Greedy2 Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
-		     return(0); 
+			      reader2>>num_obs;
+			      ull max_time;	      
+			      for(int i=0;i<num_obs;i++)
+			      {
+				reader2>>x;
+				reader2>>y;
+				reader2>>dur;
+
+				if(x==new_origin->x && y==new_origin->y)
+				{
+				 res<<"Greedy2 cant mark current robot position as obstacle "<<x<<","<<y<<" Map is invalid "<<endl;
+				 return(0);
+				}
+
+			       }
+			       reader2>>obs_ts;
+			       if(obs_ts==-1)
+			       obs_ts=plan_till+1;
+		      } 
+		      res<<"Greedy2 Number of cycle traversed = "<<cycle_count<<endl;
+		      return(0); 
 		   }
                    else
                     pwh_plan.insert(make_pair(global_ts+plan_cost,cur_best));
@@ -2122,7 +2132,7 @@ int main(int args,char **argv)
 
 	  
 	}
-	res<<"Greedy2 Number of cycle traversed = "<<cycle_count<<" till "<<global_ts<<endl;
+	res<<"Greedy2 Number of cycle traversed = "<<cycle_count<<endl;
 
 return(0);
 }
